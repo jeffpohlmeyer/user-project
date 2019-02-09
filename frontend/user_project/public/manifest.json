@@ -1,6 +1,6 @@
 {
-  "name": "byf",
-  "short_name": "byf",
+  "name": "user-project",
+  "short_name": "user",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",

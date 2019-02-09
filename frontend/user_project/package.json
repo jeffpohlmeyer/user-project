@@ -1,6 +1,6 @@
 {
-  "name": "byf",
-  "version": "0.0.4",
+  "name": "user-project",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
