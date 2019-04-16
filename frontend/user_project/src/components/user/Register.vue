@@ -1,73 +1,73 @@
 <template>
   <div id="register">
-    <v-snackbar
-      v-model="snackbar"
-      :timeout="snackbarTimeout"
-      :color="color"
-      top
-    >
-      {{ alertMsg }}
-      <v-btn
-        dark
-        flat
-        @click="snackbar = false"
-      >
-        Close
-      </v-btn>
-    </v-snackbar>
-    <v-alert
-      v-model="alert"
-      dismissible
-      color="info"
-    >
-      {{ alertMsg }}
-    </v-alert>
     <v-card class="elevation-4 pa-3">
       <v-card-title>
         <p class="headline">Register</p>
       </v-card-title>
-      <v-form ref="form" v-model="valid" lazy-validation>
+      <v-form
+        @submit="register"
+        onsubmit="return false;"
+      >
         <v-card-text>
           <v-text-field
             v-model="email"
             label="Email"
-            :rules="emailRules"
+            :error-messages="emailErrors"
             required
+            @input="$v.email.$touch()"
+            @blur="$v.email.$touch()"
             autofocus
           >
           </v-text-field>
           <v-text-field
             v-model="name"
             label="Username"
-            :rules="nameRules"
+            :error-messages="nameErrors"
             required
+            @input="$v.name.$touch()"
+            @blur="$v.name.$touch()"
           >
           </v-text-field>
           <v-text-field
             v-model="password1"
             :append-icon="show_one ? 'visibility_off' : 'visibility'"
-            :rules="password1Rules"
+            :error-messages="password1Errors"
             :type="show_one ? 'text' : 'password'"
             name="password1"
             label="Password"
             hint="At least 6 characters"
             counter
+            required
+            @input="$v.password1.$touch()"
+            @blur="$v.password1.$touch()"
             @click:append="show_one = !show_one"
           ></v-text-field>
           <v-text-field
             v-model="password2"
             :append-icon="show_two ? 'visibility_off' : 'visibility'"
-            :rules="password2Rules"
+            :error-messages="password2Errors"
             :type="show_two ? 'text' : 'password'"
             name="password2"
             label="Re-Enter Password"
             hint="At least 6 characters"
             counter
+            required
+            @input="$v.password2.$touch()"
+            @blur="$v.password2.$touch()"
             @click:append="show_two = !show_two"
+            @submit=""
+            @keyup.enter.native="register"
           ></v-text-field>
         </v-card-text>
         <v-card-actions>
-          <v-btn small color="blue" @click="register" :disabled="!valid" class="white--text">Submit</v-btn>
+          <v-btn
+            small
+            color="blue"
+            @click="register"
+            class="white--text"
+          >
+            Submit
+          </v-btn>
         </v-card-actions>
       </v-form>
     </v-card>
@@ -77,78 +77,93 @@
 </template>
 
 <script>
+  import { validationMixin } from 'vuelidate';
+  import { required, sameAs, minLength, email } from 'vuelidate/lib/validators';
+
   export default {
     name: "Register",
-    data() {
-      return {
-        valid: true,
-        name: '',
-        nameRules: [
-          v => !!v || 'Name is required',
-        ],
-        email: '',
-        emailRules: [
-          v => !!v || 'Email is required',
-          v => /.+@.+/.test(v) || 'Email must be valid'
-        ],
-        password1: '',
-        password2: '',
-        password1Rules: [
-          v => !!v || 'Password is required',
-          v => (v && v.length >= 6) || 'Minimum of 6 characters',
-        ],
-        password2Rules: [
-          v => !!v || 'Password is required',
-          v => v === this.password1 || 'Passwords must match'
-        ],
-        show_one: false,
-        show_two: false,
-        alert: false,
-        alertMsg: '',
-        snackbarTimeout: 0,
-        snackbar: false,
-        color: null,
+    mixins: [validationMixin],
+    validations: {
+      name: { required },
+      email: { required, email },
+      password1: { required, sameAsPassword: sameAs('password2'), minLength: minLength(6) },
+      password2: { required, sameAsPassword: sameAs('password1'), minLength: minLength(6) }
+    },
+    data: () => ({
+      name: null,
+      email: null,
+      password1: null,
+      password2: null,
+      show_one: false,
+      show_two: false,
+    }),
+    computed: {
+      emailErrors() {
+        const errors = [];
+        if (!this.$v.email.$dirty) return errors;
+        !this.$v.email.required && errors.push('Email is required.');
+        !this.$v.email.email && errors.push('Please enter a valid email address.');
+        return errors
+      },
+      nameErrors() {
+        const errors = [];
+        if (!this.$v.name.$dirty) return errors;
+        !this.$v.name.required && errors.push('User name is required.');
+        return errors
+      },
+      password1Errors() {
+        const errors = [];
+        if (!this.$v.password1.$dirty) return errors;
+        !this.$v.password1.required && errors.push('New password is required.');
+        !this.$v.password1.minLength && errors.push('Password must be at least 6 characters.')
+        return errors
+      },
+      password2Errors() {
+        const errors = [];
+        if (!this.$v.password2.$dirty) return errors;
+        !this.$v.password2.required && errors.push('Please repeat the new password.');
+        !this.$v.password2.minLength && errors.push('Password must be at least 6 characters.')
+        !this.$v.password2.sameAsPassword && errors.push('Passwords must be equal.');
+        return errors
       }
     },
     methods: {
-      register() {
-        //todo: Set up axios baseURL in main.js and create separate services file
-        //todo: Figure out how to log in with either user name or email
-        //todo: Set up user/password management routes
-        //todo: Add social auth
-        if (this.$refs.form.validate()) {
-          this.$store.dispatch('user/registerUser',{
-            email: this.email.toLowerCase(),
-            username: this.name,
-            password1: this.password1,
-            password2: this.password2,
-          })
-            .then(response => {
-              this.alert = false
-              this.snackbar = true
-              this.alertMsg = response.data.detail
-              this.alertMsg += ` Go to ${this.email} for a link to complete the registration process.`
-              this.color = "info"
-              this.clear()
-              console.log(response)
-            })
-            .catch(err => {
-              this.snackbar = true
-              this.alert = false
-              this.alertMsg = err.response.data.email[0]
-              this.color = "error"
-              console.log(err.response.data)
-            })
+      async register() {
+        this.$v.$touch();
+        if (!this.$v.$invalid) {
+          try {
+            const response = await this.$store.dispatch('user/registerUser', {
+              email: this.email.toLowerCase(),
+              username: this.name,
+              password1: this.password1,
+              password2: this.password2,
+            });
+            const message = `${response.data.detail} Go to ${this.email} for a link to complete the registration process.`
+            const snackbar = true;
+            const color = "info";
+            this.clear();
+            this.$store.commit('setSnackbarData', {message, color, snackbar});
+          }
+          catch(err) {
+            console.log('err in Register.vue/register', err);
+            let message = ``;
+            const color = 'error';
+            const snackbar = true;
+            Object.keys(err.response.data).map(key => {
+              err.response.data[key].map(errorMsg => {
+                message += `${errorMsg} `
+              })
+            });
+            this.$store.commit('setSnackbarData', {message, color, snackbar});
+          }
         }
       },
       clear() {
-        this.$refs.form.reset()
-      },
-      login() {
-        this.$store.commit('user/setPath',{path: 'login'})
-      },
-      forgot() {
-        this.$store.commit('user/setPath',{path: 'forgot'})
+        this.name = null;
+        this.email = null;
+        this.password1 = null;
+        this.password2 = null;
+        this.$v.$reset();
       },
     }
   }

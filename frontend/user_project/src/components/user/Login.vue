@@ -1,34 +1,20 @@
-<!--todo: fix the snackbar/alert issue.  You shouldn't be double counting them.  Also change the messaging for user/mutations/setConfirmedMessage.
-       Make everything more consistent. -->
-
 <template>
-  <transition name="slide-fade" mode="out-in">
   <div id="login">
-    <v-snackbar
-      v-model="snackbar"
-      :timeout="snackbarTimeout"
-      :color="color"
-      top
-    >
-      {{ alertMsg }}
-      <v-btn
-        dark
-        flat
-        @click="snackbar = false"
-      >
-        Close
-      </v-btn>
-    </v-snackbar>
-    <v-card class="elevation-4 pa-3">
+    <v-card class="elevation-4 pa-3" chai="login-card">
       <v-card-title>
         <p class="headline">Log In</p>
       </v-card-title>
-      <v-form ref="form" v-model="valid" lazy-validation>
+      <v-form
+        @submit="login"
+        onsubmit="return false;"
+      >
         <v-card-text>
           <v-text-field
             v-model="name"
             label="Username"
-            :rules="nameRules"
+            :error-messages="nameErrors"
+            @input="$v.name.$touch()"
+            @blur="$v.name.$touch()"
             required
             autofocus
           >
@@ -36,98 +22,111 @@
           <v-text-field
             v-model="password"
             :append-icon="show ? 'visibility_off' : 'visibility'"
-            :rules="passwordRules"
+            :error-messages="passwordErrors"
             :type="show ? 'text' : 'password'"
             name="password"
             label="Password"
             hint="At least 6 characters"
             counter
             @click:append="show = !show"
+            @submit=""
+            @keyup.enter.native="login"
+            @input="$v.password.$touch()"
+            @blur="$v.password.$touch()"
           ></v-text-field>
         </v-card-text>
         <v-card-actions>
-          <v-btn small color="blue" @click="login" :disabled="!valid" class="white--text">Log In</v-btn>
+          <v-layout row fill-height justify-end>
+            <v-btn
+              small
+              color="blue"
+              @click="login"
+              class="white--text"
+            >
+              Log In
+            </v-btn>
+          </v-layout>
         </v-card-actions>
       </v-form>
     </v-card>
     <p class="white--text ma-0">New user?  Click <router-link :to="{name: 'Register'}">here</router-link> to register.</p>
     <p class="white--text ma-0">Forgot password?  Click <router-link :to="{name: 'ForgotPassword'}">here</router-link> to reset it.</p>
   </div>
-  </transition>
 </template>
 
 <script>
+  import { mapState } from 'vuex';
+
+  import { validationMixin } from 'vuelidate';
+  import { required, minLength } from 'vuelidate/lib/validators';
+
   export default {
-  name: "Login",
-  data() {
-    return {
-      valid: true,
+    name: "Login",
+    mixins: [validationMixin],
+    validations: {
+      name: { required },
+      password: { required, minLength: minLength(6) }
+    },
+    data: () => ({
       name: '',
-      nameRules: [
-        v => !!v || 'Name is required',
-      ],
       email: '',
-      emailRules: [
-        v => !!v || 'Email is required',
-        v => /.+@.+/.test(v) || 'Email must be valid'
-      ],
       password: '',
-      passwordRules: [
-        v => !!v || 'Password is required',
-        v => (v && v.length >= 6) || 'Minimum of 6 characters',
-      ],
       show: false,
-      snackbar: false,
-      alertMsg: '',
-      snackbarTimeout: 0,
-      color: '',
-    }
-  },
-  methods: {
-    login() {
-      //todo: Set up axios baseURL in main.js and create separate services file
-      //todo: Figure out how to log in with either user name or email
-      //todo: Set up user/password management routes
-      //todo: Add social auth
-      if (this.$refs.form.validate()) {
-        this.$store.dispatch('user/loginUser',{
-          username: this.name,
-          password: this.password
-        })
-          .then((response) => {
-            console.log('response.data',response.data)
-            this.snackbar = false
-            this.alertMsg = ''
-          })
-          .then(() => {
-            this.$router.push({name: 'User'})
-          })
-          .catch(err => {
-            this.alertMsg = ''
-            console.log('err.response',err.response)
+    }),
+    computed: {
+      ...mapState({
+        alertMessage: state => state.user.alertMessage,
+      }),
+      nameErrors() {
+        const errors = [];
+        if (!this.$v.name.$dirty) return errors;
+        !this.$v.name.required && errors.push('User name is required.');
+        return errors
+      },
+      passwordErrors() {
+        const errors = [];
+        if (!this.$v.password.$dirty) return errors;
+        !this.$v.password.required && errors.push('Password is required.');
+        !this.$v.password.minLength && errors.push('Password must be at least 6 characters.');
+        return errors
+      },
+    },
+    methods: {
+      async login() {
+        this.$v.$touch();
+        if (!this.$v.$invalid) {
+          try {
+            await this.$store.dispatch('user/loginUser',{
+              username: this.name,
+              password: this.password
+            });
+            this.$store.commit('user/setAlertMessage');
+            this.$router.push({name: 'GamesList'})
+          }
+          catch(err) {
+            console.log('err in Login.vue/login()', err);
+            let message = '';
             Object.keys(err.response.data).map(key => {
               err.response.data[key].map(errorMsg => {
-                this.alertMsg += `${errorMsg} `
+                message += `${errorMsg} `
               })
-            })
-            this.snackbar = true
-            this.color = "red"
-          })
-      }
+            });
+            const color = 'error';
+            const snackbar = true;
+            this.$store.commit('setSnackbarData', {message, color, snackbar});
+          }
+        }
+      },
     },
-  },
-    //todo: figure out why mapState doesn't work
-  computed: {
-    alertMessage() { return this.$store.state.user.alertMessage }
-  },
-  mounted() {
-    if (this.alertMessage.length > 0) {
-      this.alertMsg = this.alertMessage
-      this.color = 'green'
-      this.snackbar = true
+    mounted() {
+      if (!!this.alertMessage) {
+        const message = this.alertMessage;
+        const color = 'success';
+        const snackbar = true;
+        this.$store.commit('setSnackbarData', {message, color, snackbar});
+      }
     }
   }
-}
 </script>
 
 <style scoped>

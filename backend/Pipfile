@@ -12,6 +12,7 @@ django-cors-headers = "*"
 django-rest-auth = "*"
 django-allauth = "*"
 djangorestframework-simplejwt = "*"
+coverage = "*"
 
 [dev-packages]
 

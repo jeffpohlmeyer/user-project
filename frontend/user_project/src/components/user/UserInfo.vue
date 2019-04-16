@@ -1,21 +1,9 @@
 <template>
   <div>
-    <v-snackbar
-      v-model="alert"
-      :timeout="snackbarTimeout"
-      :color="color"
-      top
+    <v-form
+      @submit="updateUserInfo"
+      onsubmit="return false;"
     >
-      {{ alertMsg }}
-      <v-btn
-        dark
-        flat
-        @click="alert = false"
-      >
-        Close
-      </v-btn>
-    </v-snackbar>
-    <v-form v-model="valid" lazy-validation>
       <v-card>
         <v-card-title class="title">
           User Info
@@ -25,17 +13,24 @@
           <v-text-field
             v-model="localFirstName"
             label="First Name"
+            @submit=""
+            @keyup.enter.native="updateUserInfo"
           ></v-text-field>
           <v-text-field
             v-model="localLastName"
             label="Last Name"
+            @submit=""
+            @keyup.enter.native="updateUserInfo"
           ></v-text-field>
           <v-text-field
             v-model="localUsername"
-            :counter="10"
             label="Username"
             required
-            :rules="userNameRules"
+            :error-messages="usernameErrors"
+            @submit=""
+            @keyup.enter.native="updateUserInfo"
+            @input="$v.localUsername.$touch()"
+            @blur="$v.localUsername.$touch()"
           ></v-text-field>
           <v-text-field
             v-model="email"
@@ -54,70 +49,81 @@
 </template>
 
 <script>
-  import { mapState } from 'vuex'
+  import { mapState } from 'vuex';
+
+  import { validationMixin } from 'vuelidate';
+  import { required, minLength } from 'vuelidate/lib/validators';
+
   export default {
     name: "UserInfo",
-    data() {
-      return {
-        alert: false,
-        alertMsg: '',
-        color: '',
-        snackbarTimeout: 6000,
-        valid: true,
-        localFirstName: '',
-        localLastName: '',
-        localUsername: '',
-        userNameRules: [
-          v => !!v || 'Username is required',
-          v => (v && v.length <= 10) || 'Maximum length of 10'
-        ],
+    mixins: [validationMixin],
+    validations: {
+      localUsername: { required, minLength: minLength(1) },
+    },
+    data: () => ({
+      localUsername: null,
+      localFirstName: null,
+      localLastName: null,
+    }),
+    computed: {
+      ...mapState('user', {
+        email: state => state.email,
+        username: state => state.username,
+        firstName: state => state.firstName,
+        lastName: state => state.lastName,
+      }),
+      usernameErrors() {
+        const errors = [];
+        if (!this.$v.localUsername.$dirty) return errors;
+        !this.$v.localUsername.required && errors.push('Username is required.');
+        // !this.$v.localUsername.minLength && errors.push('Username is required.');
+        return errors
       }
     },
     methods: {
-      updateUserInfo() {
-        this.$store.dispatch('user/updateUserInfo',{
-          firstName: this.localFirstName,
-          lastName: this.localLastName,
-          username: this.localUsername,
-          accessKey: this.accessKey,
-          refreshKey: this.refreshKey
-        })
-          .then(() => {
-            this.alert = true
-            this.alertMsg = 'You have successfully updated your information.'
-            this.color = 'green'
-          })
-          .catch(err => {
-            this.alert = true
-            this.alertMsg = ''
+      updateLocalUserInfo() {
+        this.localUsername = this.username;
+        this.localFirstName = this.firstName;
+        this.localLastName = this.lastName;
+      },
+      async getUser() {
+        try {
+          await this.$store.dispatch('user/getUser');
+          this.updateLocalUserInfo();
+        } catch(err) {
+          console.log('err in UserInfo.vue/getUser');
+        }
+      },
+      async updateUserInfo() {
+        this.$v.$touch();
+        if (!this.$v.$invalid) {
+          try {
+            await this.$store.dispatch('user/updateUserInfo',{
+              firstName: this.localFirstName,
+              lastName: this.localLastName,
+              username: this.localUsername,
+            });
+            const message = 'You have successfully updated your information.';
+            const color = 'success';
+            const snackbar = true;
+            this.$store.commit('setSnackbarData', {message, color, snackbar})
+          }
+          catch(err) {
+            let message = '';
             Object.keys(err.response.data).map(key => {
               err.response.data[key].map(errorMsg => {
-                this.alertMsg += `${errorMsg} `
+                message += `${errorMsg} `
               })
-            })
-            this.color = 'red'
-          })
+            });
+            const color = 'error';
+            const snackbar = true;
+            this.$store.commit('setSnackbarData', {message, color, snackbar})
+          }
+        }
       },
     },
-    computed: {
-      ...mapState('user', {
-        accessKey: state => state.accessKey,
-        refreshKey: state => state.refreshKey,
-        id: state => state.id,
-        email: state => state.email,
-        firstName: state => state.firstName,
-        lastName: state => state.lastName,
-        username: state => state.username
-      })
-    },
     mounted() {
-      this.$store.dispatch('user/getUser',{
-        accessKey: this.accessKey,
-        refreshKey: this.refreshKey
-      })
-      this.localFirstName = this.firstName
-      this.localLastName = this.lastName
-      this.localUsername = this.username
+      this.getUser();
     },
   }
 </script>

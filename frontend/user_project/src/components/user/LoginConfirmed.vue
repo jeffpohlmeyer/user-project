@@ -11,7 +11,8 @@
       }
     },
     beforeCreate() {
-      this.$store.commit('user/setConfirmedMessage');
+      const message = 'You have confirmed your email address.  Please log in.';
+      this.$store.commit('user/setAlertMessage', message);
       this.$router.push({name: 'Login'})
     }
   }

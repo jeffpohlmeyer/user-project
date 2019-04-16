@@ -1,138 +1,116 @@
 import {HTTP} from '../http-constants'
+import axios from 'axios';
+
+const apiCall = process.env.NODE_ENV === 'test' ? axios : HTTP;
 
 export default {
-  login(payload) {
-    console.log('payload', payload)
-    return new Promise((resolve, reject) => {
-      console.log('payload in login', payload)
-      HTTP({method: 'post',
-        url: `/simple/token/`,
-        data: {
-          username: payload.username,
-          password: payload.password
-        }})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+  async login(payload) {
+    try {
+      const {username, password} = {...payload};
+      const response = await apiCall.post(`/simple/token/`, {username,password});
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/login', err);
+      return Promise.reject(err);
+    }
   },
-  register(payload) {
-    return new Promise((resolve, reject) => {
-      HTTP
+  async register(payload) {
+    try {
+      const {email, password1, password2, username} = {...payload};
+      const response = await apiCall
         .post('/rest-auth/registration/', {
-          email: payload.email,
-          password1: payload.password1,
-          password2: payload.password2,
-          username: payload.username
-        })
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+          email,
+          password1,
+          password2,
+          username
+        });
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/register', err);
+      return Promise.reject(err);
+    }
   },
-  getAllUsers() {
-    HTTP
-      .get('/api/users/',{})
-      .then(response => { console.log(response) })
-      .catch(err => { console.log(err.response.data) })
+  async getAllUsers() {
+    try {
+      const response = await apiCall.get('/api/users/');
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/getAllUsers', err);
+      return Promise.reject(err);
+    }
   },
-  getUser() {
-    return new Promise((resolve, reject) => {
-      HTTP
-        .get(`/rest-auth/user/`,{})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+  async getUser() {
+    try {
+      const response = await apiCall.get(`/rest-auth/user/`);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/getUser', err);
+      return Promise.reject(err);
+    }
   },
-  updateUserInfo(payload) {
-    return new Promise((resolve, reject) => {
-      HTTP
+  async updateUserInfo(payload) {
+    try {
+      const response = await apiCall
         .put(`/rest-auth/user/`,
           {
             first_name: payload.firstName,
             last_name: payload.lastName,
             username: payload.username
-          },
-          {})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+          });
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/updateUserInfo', err);
+      return Promise.reject(err);
+    }
   },
-  resetPassword(payload) {
-    return new Promise((resolve, reject) => {
-      HTTP
-        .post(`/rest-auth/password/reset/`,
-          {
-            email: payload.email
-          },
-          {})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+  async resetPassword(payload) {
+    try {
+      const response = await apiCall
+        .post(`/rest-auth/password/reset/`,{email: payload.email});
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/resetPassword', err);
+      return Promise.reject(err);
+    }
   },
-  confirmPasswordReset(payload) {
-    return new Promise((resolve, reject) => {
-      HTTP
+  async confirmPasswordReset(payload) {
+    try {
+      const response = await apiCall
         .post(`/rest-auth/password/reset/confirm/`,
           {
             uid: payload.uid,
             token: payload.token,
             new_password1: payload.new_password1,
             new_password2: payload.new_password2,
-          },
-          {})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+          });
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/confirmPasswordReset', err);
+      return Promise.reject(err);
+    }
   },
-  changePassword(payload) {
-    return new Promise((resolve, reject) => {
-      HTTP
-        .post(`/rest-auth/password/change/`,
-          {
-            old_password: payload.old_password,
-            new_password1: payload.new_password1,
-            new_password2: payload.new_password2,
-          },
-          {})
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
+  async changePassword(payload) {
+    try {
+      const response = await apiCall
+      .post(`/rest-auth/password/change/`,
+        {
+          old_password: payload.old_password,
+          new_password1: payload.new_password1,
+          new_password2: payload.new_password2,
+        });
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/changePassword', err);
+      return Promise.reject(err);
+    }
   },
-  logout() {
-    return new Promise((resolve, reject) => {
-      HTTP
-        .post(`/rest-auth/logout/`,{},{})
-        .then(response => {
-          resolve(response)
-        },error => {
-          reject(error)
-        })
-    })
+  async logout() {
+    try {
+      const response = await apiCall.post(`/rest-auth/logout/`,{},{});
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in DjangoService/logout', err);
+      return Promise.reject(err);
+    }
   },
-  getNewAccessKey(payload) {
-    HTTP
-      .post(`/simple/token/refresh/`, {refresh: payload.refreshKey})
-      .then(response => (Promise.resolve(response)))
-      .catch(err => (Promise.reject(err)))
-  }
 }

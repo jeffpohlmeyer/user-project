@@ -12,132 +12,46 @@ function initialState() {
     lastName: '',
     username: '',
     path: '',
-    alertMessage: '',
+    alertMessage: null,
     uid: '',
     token: '',
   }
 }
 
-const getters = {}
-
-export const actions = {
-  loginUser({ commit }, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.login(payload)
-        .then(response => {
-          commit('setUserKey',{
-            accessKey: response.data.access,
-            refreshKey: response.data.refresh
-          })
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  registerUser({ commit }, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.register(payload)
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  getAllUsers() {
-    DjangoAPI.getAllUsers()
-  },
-  getUser({ commit, dispatch }, payload) {
-    DjangoAPI.getUser(payload)
-      .then(response => {
-        commit('setUserInfo', response.data)
-      })
-      .catch(err => {
-        console.log(err.response)
-      })
-  },
-  updateUserInfo({ dispatch }, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.updateUserInfo(payload)
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  resetPassword({}, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.resetPassword(payload)
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  confirmPasswordReset({}, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.confirmPasswordReset(payload)
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  changePassword({}, payload) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.changePassword(payload)
-        .then(response => {
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  },
-  logout({ commit }) {
-    return new Promise((resolve, reject) => {
-      DjangoAPI.logout()
-        .then(response => {
-          commit('setUserKey',{accessKey: null, refreshKey: null})
-          resolve(response)
-        }, error => {
-          reject(error)
-        })
-    })
-  }
-}
+const getters = {};
 
 export const mutations = {
   setUserKey(state, payload) {
-    state.accessKey = payload.accessKey
-    state.refreshKey = payload.refreshKey
-    console.log('HTTP', HTTP)
-    // HTTP.config.headers['Authorization'] = `Bearer  ${payload.accessKey}`;
+    state.accessKey = payload.accessKey;
+    state.refreshKey = payload.refreshKey;
     state.expiration = Date.now() + 300000
   },
   setSnackbar(state, payload) {
-    state.alertMessage = payload.message
-    state.color = payload.color
+    state.alertMessage = payload.message;
+    state.color = payload.color;
   },
-  setConfirmedMessage(state) {
-    state.alertMessage = 'You have confirmed your email address.  Please log in.'
-  },
-  setPasswordResetMessage(state) {
-    state.alertMessage = 'You have successfully reset your password.  Please log in.'
+  setAlertMessage(state, payload) {
+    state.alertMessage = payload;
   },
   setPasswordResetData(state, payload) {
-    state.uid = payload.uid
-    state.token = payload.token
+    state.uid = payload.uid;
+    state.token = payload.token;
   },
   setUserInfo(state, payload) {
-    state.email = payload.email
-    state.firstName = payload.first_name
-    state.lastName = payload.last_name
-    state.username = payload.username
-    state.id = payload.id
+    state.email = payload.email;
+    state.firstName = payload.first_name;
+    state.lastName = payload.last_name;
+    state.username = payload.username;
+    state.id = payload.id;
+  },
+  setFirstName(state, payload) {
+    state.firstName = payload;
+  },
+  setLastName(state, payload) {
+    state.lastName = payload;
+  },
+  setUsername(state, payload) {
+    state.userName = payload;
   },
   reset(state) {
     const s = initialState();
@@ -146,7 +60,91 @@ export const mutations = {
     });
     console.log('state', state)
   }
-}
+};
+
+export const actions = {
+  async loginUser({ commit }, payload) {
+    try {
+      const response = await DjangoAPI.login(payload);
+      commit('setUserKey',{
+        accessKey: response.data.access,
+        refreshKey: response.data.refresh
+      });
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in user.actions/loginUser', err)
+      return Promise.reject(err);
+    }
+  },
+  async registerUser({ commit }, payload) {
+    try {
+      const response = await DjangoAPI.register(payload);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/registerUser', err);
+      return Promise.reject(err);
+    }
+  },
+  getAllUsers() {
+    DjangoAPI.getAllUsers()
+  },
+  async getUser({ commit }, payload) {
+    try{
+      const response = await DjangoAPI.getUser(payload);
+      commit('setUserInfo', response.data)
+    }
+    catch(err) {
+      console.log(err.response)
+    }
+  },
+  async updateUserInfo({ commit }, payload) {
+    try {
+      const response = await DjangoAPI.updateUserInfo(payload);
+      commit('setUserInfo', response.data);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/updateUserInfo', err);
+      return Promise.reject(err);
+    }
+  },
+  async resetPassword({}, payload) {
+    try {
+      const response = await DjangoAPI.resetPassword(payload);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/resetPassword', err);
+      return Promise.reject(err);
+    }
+  },
+  async confirmPasswordReset({}, payload) {
+    try {
+      const response = await DjangoAPI.confirmPasswordReset(payload);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/confirmPasswordReset', err);
+      return Promise.reject(err);
+    }
+  },
+  async changePassword({}, payload) {
+    try {
+      const response = await DjangoAPI.changePassword(payload);
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/changePassword', err);
+      return Promise.reject(err);
+    }
+  },
+  async logout({ commit }) {
+    try {
+      const response = await DjangoAPI.logout();
+      commit('setUserKey',{accessKey: null, refreshKey: null});
+      return Promise.resolve(response);
+    } catch(err) {
+      console.log('err in store.user/logout', err);
+      return Promise.reject(err);
+    }
+  }
+};
 
 export default {
   namespaced: true,

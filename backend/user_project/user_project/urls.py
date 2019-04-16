@@ -15,7 +15,6 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('rest-auth/', include('rest_auth.urls')),
     re_path(r'^accounts/confirm-email/(?P<key>[-:\w]+)/$', ConfirmEmailView.as_view(), name='account_confirm_email'),
-    # path('rest-auth/registration/verify-email', VerifyEmailView.as_view(), name="rest_verity_email"),
     path('rest-auth/registration/', include('rest_auth.registration.urls')),
     path('rest-auth/registration/account-email-verification-sent/', django_rest_auth_null, name='account_email_verification_sent'),
     path('simple/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

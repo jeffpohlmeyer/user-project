@@ -5,7 +5,8 @@
       <span class="title">Logout</span>
     </v-card-title>
     <v-card-text>
-      You have successfully logged out.  Click <router-link :to="{name: 'Login'}">here</router-link> to log in again.
+      You have successfully logged out.  Please close your browser to safely end your session.
+      <!--Click <router-link :to="{name: 'Login'}">here</router-link> to log in again.-->
     </v-card-text>
   </v-card>
 </div>
@@ -19,10 +20,14 @@
 
       }
     },
-    created() {
-      this.$store.dispatch('user/logout')
-        .then(() => { this.$store.commit('user/reset') })
-        .catch(err => { console.log(err) })
+    async created() {
+      try {
+        await this.$store.dispatch('user/logout');
+        this.$store.commit('user/reset');
+      }
+      catch(err) {
+        console.log(err)
+      }
     }
   }
 </script>

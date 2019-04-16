@@ -4,7 +4,7 @@ for your user account at {{ site_name }}.{% endblocktrans %}
 
 {% trans "Please go to the following page and choose a new password:" %}
 {% block reset_link %}
-{{ protocol }}://localhost:8080/user/password/confirmed/{{ uid }}/{{ token }}
+{{ protocol }}://localhost:8080/password/confirmed/{{ uid }}/{{ token }}
 {% endblock %}
 {% trans "Your username, in case you've forgotten:" %} {{ user.get_username }}
 
