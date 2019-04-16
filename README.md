@@ -11,7 +11,7 @@ More detail about the Vue project can be found in [frontend/user_project/README.
 
 # BackEnd
 ```
-cd user-project/backend
+cd backend/user_project
 pipenv install
 pipenv run python manage.py make migrations
 pipenv run python manage.py migrate
